@@ -1,13 +1,8 @@
 import asyncio
 import time
 from playwright.async_api import async_playwright
-import click
+import fire
 import sys
-
-
-@click.group()
-def cli():
-    pass
 
 async def is_result_streaming_class_present(locator):
         return await locator.locator(".result-streaming").wait_for(state="detached"),
@@ -40,18 +35,19 @@ async def send_message_async(message):
         i = await page.locator("main .group").count()
         print(await page.locator("main .group").nth(i-2).inner_text())
 
-@cli.command()
-@click.argument("message")
+def default_command(ctx, param, value):
+    if value and not ctx.resilient_parsing:
+        asyncio.run(send_message_async(value))
+
 def send_message(message):
 	asyncio.run(send_message_async(message))
 
-@cli.command()
-@click.argument("username")
-@click.argument("password")
 def login(username,password):
         asyncio.run(login_async(username,password))
 
 
-
 if __name__ == '__main__':
-    cli()
+        fire.Fire({
+            'm': send_message,
+            'l': login,
+        })
