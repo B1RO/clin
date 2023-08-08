@@ -3,6 +3,7 @@ import time
 from playwright.async_api import async_playwright
 import fire
 import sys
+import re
 
 async def is_result_streaming_class_present(locator):
         return await locator.locator(".result-streaming").wait_for(state="detached"),
@@ -23,6 +24,33 @@ async def login_async(username,password):
         await page.get_by_role('button',  name='Next').click();
         await page.get_by_role('button', name='Done').click();
        	await page.get_by_role('button', name='Dismiss').click();
+
+async def new_chat():
+    async with async_playwright() as p:
+        browser = await p.chromium.connect_over_cdp("http://localhost:9222")
+        default_context = browser.contexts[0]
+        page = default_context.pages[0]                
+        # Get all div elements
+        all_div_elements = await page.locator('a').all()
+        # Filter those that match the regular expression
+        filtered_elements = [element for element in all_div_elements if re.search(r'^New chat$', await element.text_content())]
+        if filtered_elements:
+            await filtered_elements[0].click()	
+
+async def switch_to_4():
+    async with async_playwright() as p:
+        browser = await p.chromium.connect_over_cdp("http://localhost:9222")
+        default_context = browser.contexts[0]
+        page = default_context.pages[0]                
+        await page.get_by_text("GPT-4").click()
+
+async def switch_to_3():
+    async with async_playwright() as p:
+        browser = await p.chromium.connect_over_cdp("http://localhost:9222")
+        default_context = browser.contexts[0]
+        page = default_context.pages[0]                
+        await page.get_by_text("GPT-3.5").click()
+
 
 async def send_message_async(message):
     async with async_playwright() as p:
@@ -52,4 +80,7 @@ if __name__ == '__main__':
         fire.Fire({
             'm': send_message,
             'l': login,
+            'n' : new_chat,
+            "3" : switch_to_3,	
+            "4" : switch_to_4
         })
