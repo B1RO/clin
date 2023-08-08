@@ -25,17 +25,12 @@ async def login_async(username,password):
         await page.get_by_role('button', name='Done').click();
        	await page.get_by_role('button', name='Dismiss').click();
 
-async def new_chat():
+async def new_chat_async():
     async with async_playwright() as p:
         browser = await p.chromium.connect_over_cdp("http://localhost:9222")
         default_context = browser.contexts[0]
         page = default_context.pages[0]                
-        # Get all div elements
-        all_div_elements = await page.locator('a').all()
-        # Filter those that match the regular expression
-        filtered_elements = [element for element in all_div_elements if re.search(r'^New chat$', await element.text_content())]
-        if filtered_elements:
-            await filtered_elements[0].click()	
+        all_div_elements = await page.locator('a').filter(has_text="New chat").first.click()
 
 async def switch_to_4():
     async with async_playwright() as p:
@@ -63,9 +58,8 @@ async def send_message_async(message):
         i = await page.locator("main .group").count()
         print(await page.locator("main .group").nth(i-2).inner_text())
 
-def default_command(ctx, param, value):
-    if value and not ctx.resilient_parsing:
-        asyncio.run(send_message_async(value))
+def new_chat():
+    asyncio.run(new_chat_async())
 
 def send_message(message=None):
     if message is None:
@@ -74,7 +68,7 @@ def send_message(message=None):
     asyncio.run(send_message_async(message))
 
 def login(username,password):
-        asyncio.run(login_async(username,password))
+   asyncio.run(login_async(username,password))
 
 if __name__ == '__main__':
         fire.Fire({
