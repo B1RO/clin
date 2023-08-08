@@ -39,12 +39,14 @@ def default_command(ctx, param, value):
     if value and not ctx.resilient_parsing:
         asyncio.run(send_message_async(value))
 
-def send_message(message):
-	asyncio.run(send_message_async(message))
+def send_message(message=None):
+    if message is None:
+        # Read the message from stdin
+        message = sys.stdin.read().strip()
+    asyncio.run(send_message_async(message))
 
 def login(username,password):
         asyncio.run(login_async(username,password))
-
 
 if __name__ == '__main__':
         fire.Fire({
