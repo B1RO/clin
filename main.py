@@ -1,7 +1,9 @@
-import asyncio
 from playwright.async_api import async_playwright
 import fire
 import sys
+import asyncio
+import shutil
+import math
 
 async def wait_message_streaming_visible(locator):
     return await locator.locator(".result-streaming").wait_for(state="visible")
@@ -56,40 +58,26 @@ async def switch_to_3():
         await page.get_by_text("GPT-3.5").click()
 
 
+
 async def stream_message(page):
     last_text = ""
-    last_line_count = 0
+    terminal_width, _ = shutil.get_terminal_size()
+
     while True:
-        # Get the last message from the group without the "?" text
         current_text = await page.locator("main .group").filter(has_not_text="?").last.inner_text()
 
-        # Check if the text has been updated
         if current_text != last_text:
-            # Count the number of lines in the current text
-            current_line_count = current_text.count('\n') + 1
-
-            # Move the cursor up by the number of lines in the last printed text
-            for _ in range(last_line_count):
-                sys.stdout.write("\033[F")  # Cursor up one line
-
-            # Split the current text into lines and print each line after clearing it
-            max_line_length = max(len(line) for line in current_text.split('\n'))
-            for line in current_text.split('\n'):
-                print(line.ljust(max_line_length), end='\n')
-
-            # If the previous text had more lines, clear the remaining lines
-            for _ in range(last_line_count - current_line_count):
-                print(' ' * max_line_length)  # Clear line with spaces
-                sys.stdout.write("\033[F")  # Cursor up one line
-
+            print(current_text[len(last_text):], end="")
             last_text = current_text
-            last_line_count = current_line_count
 
-        # Check for a condition to break the loop (e.g., the streaming has finished)
         if await page.locator(".result-streaming").count() == 0:
             break
 
-        await asyncio.sleep(0.100)  # Wait for a quarter of a second before checking again
+        await asyncio.sleep(0.100)
+    print("\n")
+
+
+
 
 
 
