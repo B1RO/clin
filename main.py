@@ -79,6 +79,12 @@ async def stream_message(page):
 
 
 
+async def get_nth_message(n):
+    async with async_playwright() as p:
+        browser = await p.chromium.connect_over_cdp("http://localhost:9222")
+        default_context = browser.contexts[0]
+        page = default_context.pages[0]
+        print(await page.locator("main .group").filter(has_not_text="?").nth(n).inner_text())
 
 
 async def send_message_async(message):
@@ -114,5 +120,6 @@ if __name__ == '__main__':
         'o': open_assitant,
         'n': new_chat,
         "3": switch_to_3,
-        "4": switch_to_4
+        "4": switch_to_4,
+        "g" : get_nth_message
     })
