@@ -3,10 +3,35 @@ import fire
 import sys
 import asyncio
 import shutil
-import math
+import subprocess
+import psutil
 
 async def wait_message_streaming_visible(locator):
     return await locator.locator(".result-streaming").wait_for(state="visible")
+
+
+def run_server_if_not_running(headless=False):
+    server_script = "server.py"
+    run_command = ["python", server_script, "--daemon"]
+
+    if headless:
+        run_command.append('--headless')
+
+    # Check if the server is already running
+    for process in psutil.process_iter(attrs=['pid', 'cmdline']):
+        cmdline = process.info['cmdline']
+        if cmdline and server_script in ' '.join(cmdline):
+            print(f"{server_script} is already running with PID {process.info['pid']}")
+            return
+
+    # If not running, start the server
+    print(f"Starting {server_script} with  headless mode: {headless}...")
+    subprocess.Popen(run_command, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    print(f"{server_script} has been started.")
+
+
+
+
 
 
 async def login_async(username, password):
@@ -34,12 +59,18 @@ async def new_chat_async():
         all_div_elements = await page.locator('a').filter(has_text="New chat").first.click()
 
 
-async def open_assitant():
+async def open_assitant(headless):
+    run_server_if_not_running(headless)
     async with async_playwright() as p:
         browser = await p.chromium.connect_over_cdp("http://localhost:9222")
         default_context = browser.contexts[0]
         page = default_context.pages[0]
         await page.goto("http://chat.openai.com")
+
+async def open_assistant_headless():
+    return await open_assitant(True)
+async def open_assistant_no_headless():
+    return await open_assitant(False)
 
 
 async def switch_to_4():
@@ -109,6 +140,19 @@ def send_message(message=None):
     asyncio.run(send_message_async(message))
 
 
+def close():
+    server_script = "server.py"
+    command = ["python", server_script, "--kill"]
+
+    print(f"Running {server_script} with --kill flag...")
+    result = subprocess.run(command)
+
+    if result.returncode == 0:
+        print(f"{server_script} terminated successfully.")
+    else:
+        print(f"An error occurred while terminating {server_script}.")
+
+
 def login(username, password):
     asyncio.run(login_async(username, password))
 
@@ -117,7 +161,9 @@ if __name__ == '__main__':
     fire.Fire({
         'm': send_message,
         'l': login,
-        'o': open_assitant,
+        'o': open_assistant_no_headless,
+        'oh': open_assistant_headless,
+        "c" : close,
         'n': new_chat,
         "3": switch_to_3,
         "4": switch_to_4,
